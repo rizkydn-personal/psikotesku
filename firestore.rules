@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function validAbility(s, total, limit) {
+      return s is map && s.keys().hasAll(['total','correct','wrong','omitted','percent','accuracy','seconds','timedOut','skills'])
+        && s.keys().hasOnly(['total','correct','wrong','omitted','percent','accuracy','seconds','timedOut','skills'])
+        && s.total == total && s.correct is int && s.wrong is int && s.omitted is int
+        && s.correct >= 0 && s.wrong >= 0 && s.omitted >= 0
+        && s.correct + s.wrong + s.omitted == total
+        && s.percent is number && s.percent >= 0 && s.percent <= 100
+        && (s.accuracy == null || (s.accuracy is number && s.accuracy >= 0 && s.accuracy <= 100))
+        && s.seconds is int && s.seconds >= 0 && s.seconds <= limit
+        && s.timedOut is bool && s.skills is list && s.skills.size() <= 15;
+    }
+    function trait(v) { return v is number && v >= 1 && v <= 5; }
+    function validV2(d) {
+      return d.version == 2 && d.testId == 'komprehensif'
+        && d.keys().hasOnly(['id','testId','testTitle','createdAt','ownerId','version','abilities','personality','koran','responses','projective','quality','durationSeconds'])
+        && d.keys().hasAll(['abilities','personality','koran','responses','projective','quality','durationSeconds'])
+        && d.abilities.keys().hasOnly(['verbal','numeric','spatial'])
+        && validAbility(d.abilities.verbal,15,420) && validAbility(d.abilities.numeric,15,600) && validAbility(d.abilities.spatial,12,480)
+        && d.personality.keys().hasOnly(['openness','conscientiousness','extraversion','agreeableness','emotional'])
+        && trait(d.personality.openness) && trait(d.personality.conscientiousness)
+        && trait(d.personality.extraversion) && trait(d.personality.agreeableness) && trait(d.personality.emotional)
+        && d.koran is map && d.koran.columns is list && d.koran.columns.size() == 4
+        && d.responses is map && d.responses.size() <= 42
+        && d.projective is map && d.projective.keys().hasOnly(['sentence1','sentence2','story'])
+        && (!('sentence1' in d.projective) || (d.projective.sentence1 is string && d.projective.sentence1.size() <= 1500))
+        && (!('sentence2' in d.projective) || (d.projective.sentence2 is string && d.projective.sentence2.size() <= 1500))
+        && (!('story' in d.projective) || (d.projective.story is string && d.projective.story.size() <= 1500))
+        && d.quality is list && d.quality.size() <= 10
+        && d.durationSeconds is int && d.durationSeconds >= 0;
+    }
+    function validV1(d) {
+      return d.version == 1 && d.testId in ['kepribadian','minat-bakat']
+        && d.keys().hasOnly(['id','testId','testTitle','createdAt','scores','ownerId','version'])
+        && d.scores.keys().hasOnly(['connection','exploration','structure'])
+        && d.scores.connection is number && d.scores.connection >= 0 && d.scores.connection <= 100
+        && d.scores.exploration is number && d.scores.exploration >= 0 && d.scores.exploration <= 100
+        && d.scores.structure is number && d.scores.structure >= 0 && d.scores.structure <= 100;
+    }
+    match /users/{userId}/test_results/{resultId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.ownerId == userId && request.resource.data.id == resultId
+        && request.resource.data.testTitle is string && request.resource.data.testTitle.size() <= 100
+        && request.resource.data.createdAt is string
+        && (validV2(request.resource.data) || validV1(request.resource.data));
+    }
+  }
+}

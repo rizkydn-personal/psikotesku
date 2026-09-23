@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root {
+  color-scheme: light;
+}
+body {
+  background: #f6e7c630;
+  color: #373c38;
+  min-height: 100vh;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 90% 15%, #bdced350, transparent 48%),
+    radial-gradient(ellipse at 5% 50%, #e8ccc540, transparent 45%),
+    radial-gradient(ellipse at 75% 95%, #cfd4ae40, transparent 45%);
+  z-index: -1;
+  pointer-events: none;
+}
+@layer base {
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-semibold;
+  }
+  button,
+  a,
+  input {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+  :focus-visible {
+    outline: 2px solid #807e79;
+    outline-offset: 4px;
+  }
+}
+@layer components {
+  .btn {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-ink/15 bg-white/40 px-5 py-3 text-sm font-semibold transition-all duration-300 hover:bg-white/80;
+  }
+  .btn > svg {
+    @apply shrink-0;
+  }
+  .btn-primary {
+    @apply btn bg-sage hover:bg-sage/70;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.2em];
+  }
+  .page-shell {
+    @apply mx-auto w-full min-w-0 max-w-6xl px-4 sm:px-6 md:px-10;
+  }
+}
+.fade-in {
+  animation: appear 0.5s ease-out both;
+}
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
