@@ -11,10 +11,10 @@ import {
   type Ability,
 } from "@/data/psychotestQuestions";
 import {
-  appendKoranAnswer,
+  advanceKoran,
+  koranProgress,
   createSession,
   finishAssessment,
-  koranColumnAt,
   secondsRemaining,
   type Session,
 } from "@/lib/assessment";
@@ -62,21 +62,29 @@ export default function TestPage({
   const domain = info.id as Ability;
   const questions = session && stage < 3 ? session.questions[domain] : [];
   const question = questions[index];
-  const column =
-    active && stage === 3 ? koranColumnAt(startedAt.current, now) : 0;
+  const koranState = session
+    ? koranProgress(session)
+    : { column: 0, deadline: 0 };
+  const column = stage === 3 ? koranState.column : 0;
   const remaining =
     active && info.seconds
-      ? secondsRemaining(startedAt.current + info.seconds * 1000, now)
+      ? secondsRemaining(
+          stage === 3
+            ? koranState.deadline
+            : startedAt.current + info.seconds * 1000,
+          now,
+        )
       : 0;
 
   const endStage = useCallback(
-    (timedOut: boolean) => {
+    (timedOut: boolean, actualSeconds?: number) => {
       if (!activeRef.current || stage >= 4) return;
       activeRef.current = false;
       setConfirmation(null);
       const seconds = Math.min(
         info.seconds,
-        Math.max(0, Math.round((Date.now() - startedAt.current) / 1000)),
+        actualSeconds ??
+          Math.max(0, Math.round((Date.now() - startedAt.current) / 1000)),
       );
       setSession((previous) =>
         previous
@@ -106,6 +114,12 @@ export default function TestPage({
     const tick = () => {
       const time = Date.now();
       setNow(time);
+      if (stage === 3) {
+        setSession((previous) =>
+          previous ? advanceKoran(previous, time) : previous,
+        );
+        return;
+      }
       if (info.seconds && time >= startedAt.current + info.seconds * 1000)
         endStage(true);
     };
@@ -115,7 +129,21 @@ export default function TestPage({
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, [active, info.seconds, endStage]);
+  }, [active, stage, info.seconds, endStage]);
+  useEffect(() => {
+    if (
+      active &&
+      stage === 3 &&
+      session &&
+      koranProgress(session).column === session.koran.length
+    ) {
+      const elapsed = session.koran.reduce(
+        (sum, c) => sum + (c.elapsedMs ?? 0),
+        0,
+      );
+      endStage(false, Math.round(elapsed / 1000));
+    }
+  }, [active, stage, session, endStage]);
   useEffect(() => {
     if (!session || busy) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -132,11 +160,10 @@ export default function TestPage({
   const inputDigit = useCallback(
     (digit: number | null) => {
       if (!activeRef.current || stage !== 3 || confirmation) return;
-      const currentColumn = koranColumnAt(startedAt.current);
-      // Never attribute a key from the old, still-rendered column to the next column.
-      if (currentColumn !== column || currentColumn >= 4) return;
       setSession((previous) =>
-        previous ? appendKoranAnswer(previous, currentColumn, digit) : previous,
+        previous
+          ? advanceKoran(previous, Date.now(), { column, value: digit })
+          : previous,
       );
     },
     [stage, column, confirmation],
@@ -215,6 +242,12 @@ export default function TestPage({
   function startStage() {
     if (!session) setSession(createSession());
     startedAt.current = Date.now();
+    if (stage === 3)
+      setSession((previous) =>
+        previous
+          ? { ...previous, koranStartedAt: startedAt.current }
+          : previous,
+      );
     activeRef.current = true;
     setNow(startedAt.current);
     setActive(true);
@@ -583,13 +616,8 @@ export default function TestPage({
               <div className="mb-6 flex flex-wrap justify-between gap-3">
                 <h2 className="text-lg">Kolom {Math.min(column + 1, 4)} / 4</h2>
                 <span className="font-mono font-semibold">
-                  {clock(
-                    secondsRemaining(
-                      startedAt.current + (Math.min(column, 3) + 1) * 45000,
-                      now,
-                    ),
-                  )}{" "}
-                  pada kolom ini
+                  {clock(secondsRemaining(koranState.deadline, now))} pada kolom
+                  ini
                 </span>
               </div>
               <p className="mb-6 text-sm leading-7">
@@ -609,12 +637,12 @@ export default function TestPage({
                   soal
                 </p>
                 <p className="mt-2 text-xs leading-6">
-                  Maksimal 50 soal per kolom, termasuk yang dilewati. Input
-                  berhenti saat kolom selesai; tunggu perpindahan otomatis agar
-                  setiap kolom tetap berdurasi 45 detik.
+                  Maksimal 50 soal per kolom, termasuk yang dilewati. Langsung
+                  pindah setelah 50 soal atau waktu habis. Setelah kolom
+                  keempat, lanjut ke tahap kepribadian.
                 </p>
               </div>
-              <div className="grid gap-8 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
                 <KoranPair
                   digits={koran.digits}
                   row={row}
@@ -622,14 +650,14 @@ export default function TestPage({
                   lastAnswer={koran.answers[row - 1]}
                 />
                 <div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => (
                       <button
                         key={d}
                         aria-label={`Masukkan ${d}`}
                         disabled={column >= 4 || row >= koran.digits.length - 1}
                         onClick={() => inputDigit(d)}
-                        className={`btn min-h-16 bg-white/80 text-xl font-bold ${d === 0 ? "col-start-2" : ""}`}
+                        className={`btn !min-h-11 !py-2 bg-white/80 text-lg font-bold sm:!min-h-16 sm:text-xl ${d === 0 ? "col-start-2" : ""}`}
                       >
                         {d}
                       </button>

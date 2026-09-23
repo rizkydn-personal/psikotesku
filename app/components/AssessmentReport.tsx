@@ -158,9 +158,9 @@ export default function AssessmentReport({
         <Header title="KECEPATAN & KETELITIAN" />
         <h2 className="text-2xl">Latihan koran digital</h2>
         <p className="my-4 text-sm leading-7">
-          Empat interval masing-masing 45 detik. Kecepatan dipengaruhi cara
-          input, perangkat, dan kondisi pengerjaan. Bandingkan sesi hanya jika
-          kondisinya serupa.
+          Empat kolom, masing-masing maksimal 45 detik. Kolom yang selesai lebih
+          cepat langsung berpindah. Kecepatan dipengaruhi cara input, perangkat,
+          dan kondisi pengerjaan. Bandingkan sesi hanya jika kondisinya serupa.
         </p>
         <div className="my-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-pastel/50 p-5">
@@ -180,7 +180,11 @@ export default function AssessmentReport({
           {result.koran.correct} benar · {result.koran.wrong} salah ·{" "}
           {result.koran.skipped} dilewati
           {typeof result.koran.totalPairs === "number" && (
-            <> · {result.koran.unanswered} belum dikerjakan dari {result.koran.totalPairs} soal</>
+            <>
+              {" "}
+              · {result.koran.unanswered} belum dikerjakan dari{" "}
+              {result.koran.totalPairs} soal
+            </>
           )}
         </p>
         <div className="overflow-x-auto">
@@ -237,7 +241,10 @@ export default function AssessmentReport({
               : "Semua respons angka tercatat benar. Pertahankan akurasi saat mencoba tempo lebih cepat."}
         </p>
         <p className="mt-4 text-xs leading-6">
-          Kecepatan = jawaban angka ÷ 3 menit. Pasangan dilewati tidak termasuk
+          Kecepatan = jawaban angka dibagi durasi pengerjaan aktual dalam menit
+          ({(result.koran.durationSeconds ?? 180).toFixed(1)} detik). Durasi
+          kolom dapat berbeda, sehingga jumlah respons antarkolom tidak langsung
+          menunjukkan perbedaan kecepatan. Pasangan dilewati tidak termasuk
           akurasi. Ini latihan penjumlahan beruntun bergaya koran, bukan
           administrasi baku tes Pauli/Kraepelin.
         </p>

@@ -53,7 +53,7 @@ export const stages = [
     seconds: 180,
     detail: `${KORAN_COLUMNS} kolom × ${KORAN_PAIRS_PER_COLUMN} soal · ${KORAN_COLUMN_SECONDS} detik/kolom`,
     instruction:
-      "Jumlahkan dua angka bersebelahan dari atas ke bawah. Masukkan hanya digit satuan (8 + 7 → 5). Setelah satu jawaban, pasangan bergeser satu baris. Maksimal 50 pasangan per kolom (200 seluruhnya), termasuk pasangan yang dilewati. Setelah batas tercapai, input dikunci hingga kolom berikutnya. Kolom berpindah otomatis setiap 45 detik.",
+      "Jumlahkan dua angka bersebelahan dari atas ke bawah. Masukkan hanya digit satuan (8 + 7 → 5). Setelah satu jawaban, pasangan bergeser satu baris. Maksimal 50 pasangan per kolom (200 seluruhnya), termasuk pasangan yang dilewati. Setelah 50 pasangan selesai atau waktu 45 detik habis, langsung pindah kolom. Kolom keempat selesai langsung melanjutkan ke tahap kepribadian.",
   },
   {
     id: "personality",

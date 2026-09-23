@@ -10,27 +10,27 @@ export default function KoranPair({
   lastAnswer: number | null | undefined;
 }) {
   return (
-    <div className="rounded-2xl border border-ink/10 bg-white/80 p-6 text-center">
+    <div className="rounded-2xl border border-ink/10 bg-white/80 p-4 text-left sm:p-6">
       <p className="text-xs font-semibold tracking-wide">
         PASANGAN {row + 1} · KOLOM {column + 1}
       </p>
       {row < digits.length - 1 ? (
         <>
-          <p className="mb-5 mt-2 text-xs text-muted">
+          <p className="mb-3 mt-2 text-xs text-muted">
             Jumlahkan dua angka berikut
           </p>
           <div
             aria-label={`${digits[row]} ditambah ${digits[row + 1]}`}
-            className="mx-auto grid w-40 grid-cols-[2rem_1fr] items-center gap-x-2 gap-y-3 font-sans text-5xl font-bold tabular-nums"
+            className="grid w-28 text-center sm:w-36 grid-cols-[2rem_1fr] items-center gap-x-2 gap-y-2 font-sans text-3xl sm:text-4xl font-bold tabular-nums"
           >
             <span aria-hidden="true" />
-            <span className="rounded-2xl border border-ink/20 bg-sage/60 py-3">
+            <span className="rounded-2xl border border-ink/20 bg-sage/60 py-2">
               {digits[row]}
             </span>
             <span aria-hidden="true" className="text-3xl font-normal">
               +
             </span>
-            <span className="rounded-2xl border border-ink/20 bg-sage/60 py-3">
+            <span className="rounded-2xl border border-ink/20 bg-sage/60 py-2">
               {digits[row + 1]}
             </span>
             <span aria-hidden="true" className="col-span-2 h-px bg-ink/40" />
@@ -39,7 +39,7 @@ export default function KoranPair({
             </span>
             <span
               aria-label="Masukkan digit satuan"
-              className="rounded-2xl border-2 border-dashed border-ink/30 py-3 text-3xl"
+              className="rounded-2xl border-2 border-dashed border-ink/30 py-2 text-2xl"
             >
               ?
             </span>
@@ -58,11 +58,10 @@ export default function KoranPair({
         </>
       ) : (
         <p className="my-8 text-sm leading-7">
-          Batas {digits.length - 1} soal pada kolom ini tercapai. Input dikunci;
-          tunggu timer untuk melanjutkan.
+          Kolom selesai. Berpindah ke bagian berikutnya.
         </p>
       )}
-      <div className="mt-5 border-t border-ink/10 pt-4 text-xs leading-6">
+      <div className="mt-3 border-t border-ink/10 pt-4 text-xs leading-6">
         <p>
           {row} / {digits.length - 1} soal selesai pada kolom ini.
         </p>

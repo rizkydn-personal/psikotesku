@@ -11,9 +11,14 @@ import { shuffle } from "./psychotest";
 import { createResultId } from "./resultId";
 import { KORAN_COLUMNS, KORAN_PAIRS_PER_COLUMN } from "@/data/testConfig";
 
-export type KoranColumn = { digits: number[]; answers: (number | null)[] };
+export type KoranColumn = {
+  digits: number[];
+  answers: (number | null)[];
+  elapsedMs?: number;
+};
 export type StageTiming = { seconds: number; timedOut: boolean };
 export type Session = {
+  koranStartedAt?: number;
   questions: Record<Ability, Question[]>;
   personalityOrder: string[];
   answers: Record<string, string>;
@@ -34,6 +39,7 @@ export type AbilityScore = {
   skills: { name: string; correct: number; total: number }[];
 };
 export type KoranScore = {
+  durationSeconds?: number;
   totalPairs?: number;
   unanswered?: number;
   attempted: number;
@@ -43,6 +49,7 @@ export type KoranScore = {
   accuracy: number | null;
   perMinute: number;
   columns: {
+    seconds?: number;
     attempted: number;
     correct: number;
     wrong: number;
@@ -121,6 +128,10 @@ export function appendKoranAnswer(
   };
 }
 export function scoreKoran(columns: KoranColumn[]): KoranScore {
+  const durationSeconds = columns.reduce(
+    (sum, c) => sum + (c.elapsedMs ?? 45000) / 1000,
+    0,
+  );
   const scores = columns.map((c) => {
     let correct = 0,
       wrong = 0,
@@ -130,7 +141,13 @@ export function scoreKoran(columns: KoranColumn[]): KoranScore {
       else if (answer === (c.digits[i] + c.digits[i + 1]) % 10) correct++;
       else wrong++;
     });
-    return { attempted: correct + wrong, correct, wrong, skipped };
+    return {
+      attempted: correct + wrong,
+      correct,
+      wrong,
+      skipped,
+      seconds: (c.elapsedMs ?? 45000) / 1000,
+    };
   });
   const total = scores.reduce(
     (a, c) => ({
@@ -151,12 +168,69 @@ export function scoreKoran(columns: KoranColumn[]): KoranScore {
     accuracy: total.attempted
       ? Math.round((total.correct / total.attempted) * 100)
       : null,
-    perMinute: Math.round((total.attempted / 3) * 10) / 10,
+    durationSeconds,
+    perMinute:
+      durationSeconds > 0
+        ? Math.round(((total.attempted * 60) / durationSeconds) * 10) / 10
+        : 0,
     columns: scores,
     spread:
       Math.max(...scores.map((c) => c.attempted)) -
       Math.min(...scores.map((c) => c.attempted)),
   };
+}
+
+export function koranProgress(session: Session) {
+  const index = session.koran.findIndex((c) => c.elapsedMs === undefined);
+  const column = index < 0 ? session.koran.length : index;
+  const start =
+    (session.koranStartedAt ?? 0) +
+    session.koran
+      .slice(0, column)
+      .reduce((sum, c) => sum + (c.elapsedMs ?? 0), 0);
+  return { column, deadline: start + 45000, start };
+}
+
+/** Advance deadlines even when browser ticks are delayed; never move a stale input into a new column. */
+export function advanceKoran(
+  session: Session,
+  now: number,
+  input?: { column: number; value: number | null },
+): Session {
+  if (session.koranStartedAt === undefined) return session;
+  let next = session;
+  let progress = koranProgress(next);
+  while (progress.column < next.koran.length && now >= progress.deadline) {
+    next = {
+      ...next,
+      koran: next.koran.map((c, i) =>
+        i === progress.column ? { ...c, elapsedMs: 45000 } : c,
+      ),
+    };
+    progress = koranProgress(next);
+  }
+  if (
+    !input ||
+    input.column !== progress.column ||
+    progress.column >= next.koran.length
+  )
+    return next;
+  next = appendKoranAnswer(next, progress.column, input.value);
+  const current = next.koran[progress.column];
+  if (
+    current.answers.length >=
+    Math.min(KORAN_PAIRS_PER_COLUMN, current.digits.length - 1)
+  ) {
+    next = {
+      ...next,
+      koran: next.koran.map((c, i) =>
+        i === progress.column
+          ? { ...c, elapsedMs: Math.max(1, now - progress.start) }
+          : c,
+      ),
+    };
+  }
+  return next;
 }
 export function scoreAbility(
   domain: Ability,
