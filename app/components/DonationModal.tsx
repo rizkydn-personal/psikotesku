@@ -56,7 +56,7 @@ export default function DonationModal({
         </button>
         <Coffee size={42} className="mb-6" />
         <h2 id="donation-title" className="text-2xl">
-          Give me a Kopi
+          Give me a Coffee
         </h2>
         <p className="my-4 text-sm leading-7">
           Terima kasih sudah bertumbuh bersama kami. Secangkir kopi dari Anda
