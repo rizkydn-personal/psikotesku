@@ -190,7 +190,7 @@ export default function ResultPage({
           <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
             <DownloadButtons target={report} id={result.id} />
             <button className="btn bg-cream/60" onClick={() => setDonate(true)}>
-              <Coffee size={18} /> Give me a Kopi
+              <Coffee size={18} /> Give me a Coffee
             </button>
           </div>
           <div className="mt-8 flex flex-wrap gap-5 text-sm">
